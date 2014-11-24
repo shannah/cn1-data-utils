@@ -28,7 +28,7 @@ public class SimpleDateFormatExt extends SimpleDateFormat {
         if ( pattern.indexOf("XXX") == pattern.length()-3){
             convertTimezone = true;
             pattern = pattern.substring(0, pattern.length()-3)+"Z";
-            System.out.println("New pattern is "+pattern);
+            
         } else {
             convertTimezone = false;
         }
@@ -41,7 +41,6 @@ public class SimpleDateFormatExt extends SimpleDateFormat {
     @Override
     public Date parse(String source) throws ParseException {
         if ( convertTimezone ){
-            System.out.println("Parsing "+source);
             int len = source.length();
             if ( len >= 6 ){
                 String base = source.substring(0, len-6);

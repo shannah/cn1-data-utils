@@ -5,6 +5,7 @@
  */
 package ca.weblite.codename1.mapper;
 
+import com.codename1.processing.Result;
 import java.util.Map;
 
 /**
@@ -14,13 +15,21 @@ import java.util.Map;
 public class SimpleFieldMapper implements FieldMapper {
     
     private String path;
+    private boolean useResult = false;
     
     public SimpleFieldMapper(String path){
         this.path = path;
+        if ( path.indexOf('/') >= 0 || path.indexOf('[') >= 0){
+            useResult = true;
+        }
     }
     
     public Object getValue(Map map, String fieldName) {
-        return map.get(path);
+        if ( useResult ){
+            return Result.fromContent(map).get(path);
+        } else {
+            return map.get(path);
+        }
     }
 
     public void putValue(Map map, String fieldName, Object value) {
@@ -28,7 +37,11 @@ public class SimpleFieldMapper implements FieldMapper {
     }
 
     public boolean valueExists(Map map, String fieldName) {
-        return map.containsKey(path);
+        if ( useResult ){
+            return Result.fromContent(map).get(path) != null;
+        } else {
+            return map.containsKey(path);
+        }
     }
     
 }
