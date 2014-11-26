@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -32,7 +33,14 @@ public abstract class DataMapper {
     private Map<String,FieldMapper> fieldMappers;
     private ObjectFactory factory;
     private List<DateFormat> dateFormats = new ArrayList<DateFormat>();
+    private DateFormat outputDateFormat;
     private Class selfClass = null;
+    private boolean outputJSONReady = true;
+    
+    // True if, when writing JSON, fields that can't be converted are omitted
+    // with no error.  Set to false if you want an exception to be thrown
+    // if a property cannot be "serialized"
+    private boolean silentWriteMap = true;
     
     public DataMapper(){
         this(new HashMap<Class,DataMapper>());
@@ -50,7 +58,7 @@ public abstract class DataMapper {
         this.dateFormats.add(new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z"));
         this.dateFormats.add(new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z"));
         this.dateFormats.add(new SimpleDateFormat("MM/dd/yyyy"));
-        
+        this.outputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
         this.init();
     }
     
@@ -268,7 +276,60 @@ public abstract class DataMapper {
         }
     }
     
+    
+    public Object jsonify(Object item){
+        if ( item == null ){
+            return item;
+        }
+        Class cls = item.getClass();
+        if ( NumberUtil.isNumber(item) || cls == String.class || cls == Boolean.class || cls == Character.class){
+            return item;
+        } else if (Object[].class.isAssignableFrom(cls)){
+            if ( Integer[].class == cls || Short[].class == cls || Double[].class == cls || String[].class == cls || Long[].class == cls || Float.class == cls || Byte.class == cls || Character.class == cls || Boolean.class == cls ){
+                return Arrays.asList((Object[])item);
+            } else {
+                List out = new ArrayList(((Object[])item).length);
+            
+                for ( Object o : ((Object[])item)){
+                    out.add(jsonify(o));
+                }
+                return out;
+            }
+        } else if ( Collection.class.isAssignableFrom(cls)){
+            List out = new ArrayList(((Collection)item).size());
+            for ( Object o : (Collection)item){
+                out.add(jsonify(o));
+            }
+            return out;
+        } else if ( Map.class.isAssignableFrom(cls)){
+            Map<String,Object> out = new HashMap<String,Object>();
+            for ( Object key : ((Map)item).keySet()){
+                out.put(key.toString(), jsonify(((Map)item).get(key)));
+            }
+            return out;
+        } else if ( context.containsKey(cls)){
+            DataMapper mapper = context.get(cls);
+            Map m = new HashMap();
+            boolean oldJSONReady = mapper.isOutputJSONReady();
+            boolean oldSilentWrite = mapper.isSilentWriteMap();
+            mapper.setOutputJSONReady(true);
+            mapper.setSilentWriteMap(this.isSilentWriteMap());
+            mapper.writeMap(m, item);
+            mapper.setOutputJSONReady(oldJSONReady);
+            mapper.setSilentWriteMap(oldSilentWrite);
+            return m;
+        } else if ( Date.class.isAssignableFrom(cls)){
+            return outputDateFormat.format((Date)item);
+        } else if ( !isSilentWriteMap() ){
+            throw new RuntimeException("Failed to jsonify value "+item+" because its class is not an appropriate type to be serialized.");
+        } else {
+            return null;
+        }
+    }
     public void set(Map map, String key, Object value){
+        if ( isOutputJSONReady() ){
+           value = jsonify(value);
+        }
         if ( fieldMappers.containsKey(key)){
             fieldMappers.get(key).putValue(map, key, value);
         } else {
@@ -510,6 +571,34 @@ public abstract class DataMapper {
     
     public DataMapper getDataMapperForClass(Class cls){
         return context.get(cls);
+    }
+
+    /**
+     * @return the outputJSONReady
+     */
+    public boolean isOutputJSONReady() {
+        return outputJSONReady;
+    }
+
+    /**
+     * @param outputJSONReady the outputJSONReady to set
+     */
+    public void setOutputJSONReady(boolean outputJSONReady) {
+        this.outputJSONReady = outputJSONReady;
+    }
+
+    /**
+     * @return the silentWriteMap
+     */
+    public boolean isSilentWriteMap() {
+        return silentWriteMap;
+    }
+
+    /**
+     * @param silentWriteMap the silentWriteMap to set
+     */
+    public void setSilentWriteMap(boolean silentWriteMap) {
+        this.silentWriteMap = silentWriteMap;
     }
     
 }
