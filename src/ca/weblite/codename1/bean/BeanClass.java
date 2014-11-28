@@ -15,7 +15,7 @@ import java.util.Set;
  *
  * @author shannah
  */
-public class BeanClass {
+public abstract class BeanClass {
     
     public static interface Property {
         public String getName();
@@ -38,9 +38,13 @@ public class BeanClass {
     }
     
     public static BeanObject wrap(Object bean){
-        BeanClass bc = beanClasses.get(bean.getClass());
+        return wrap(bean, bean.getClass());
+    }
+    
+    public static BeanObject wrap(Object bean, Class cls){
+        BeanClass bc = beanClasses.get(cls);
         if ( bc == null ){
-            throw new RuntimeException("There is no registered bean class for "+bean.getClass());
+            throw new RuntimeException("There is no registered bean class for "+cls);
         }
         return bc.createObject(bean);
     }
@@ -58,11 +62,13 @@ public class BeanClass {
         return Collections.unmodifiableMap(properties);
     }
     
-    public BeanObject createObject(Object bean){
+    private BeanObject createObject(Object bean){
         return new BeanObject(this, bean);
     }
     
     protected void addProperty(Property prop){
         properties.put(prop.getName(), prop);
     }
+    
+    public abstract Class getWrappedClass();
 }

@@ -20,14 +20,22 @@ import java.util.Set;
  */
 public class BeanObject implements Map<String,Object> {
 
-    private BeanClass klass;
-    private Object bean;
+    private final BeanClass klass;
+    private final Object bean;
     private HashMap<String,Object> overflow;
     
     
     public BeanObject(BeanClass klass, Object bean){
         this.klass = klass;
         this.bean = bean;
+    }
+    
+    public BeanClass getBeanClass(){
+        return klass;
+    }
+    
+    public Object unwrap(){
+        return bean;
     }
     
     public int size() {
@@ -111,6 +119,16 @@ public class BeanObject implements Map<String,Object> {
             put((String)e.getKey(), e.getValue());
         }
     }
+    
+    public void putAllWritable(Map m){
+        Set<String> writableKeys = writableKeys();
+        for ( Object o : m.entrySet()){
+            Map.Entry e = (Map.Entry)o;
+            if ( writableKeys.contains((String)e.getKey())){
+                put((String)e.getKey(), e.getValue());
+            }
+        }
+    }
 
     public void clear() {
         for ( Object o : klass.properties.values() ){
@@ -153,7 +171,100 @@ public class BeanObject implements Map<String,Object> {
     }
 
     
+    
+    public Set readableEntries(){
+        Set out = new HashSet();
+        for (Property p : getProperties().values()){
+            if ( p.isReadable()){
+                out.add(new Entry(p.getName()));
+            }
+        }
+        return out;
+    }
+    
+    public Set writableEntries(){
+        Set out = new HashSet();
+        for (Property p : getProperties().values()){
+            if ( p.isWritable()){
+                out.add(new Entry(p.getName()));
+            }
+        }
+        return out;
+    }
+    
+    public Set<String> readableKeys(){
+        Set out = new HashSet<String>();
+        for (Property p : getProperties().values()){
+            if ( p.isReadable()){
+                out.add(p.getName());
+            }
+        }
+        return out;
+    }
+    
+    public Set<String> writableKeys(){
+        Set out = new HashSet<String>();
+        for (Property p : getProperties().values()){
+            if ( p.isWritable()){
+                out.add(p.getName());
+            }
+        }
+        return out;
+    }
+    
+    public Collection readableValues(){
+        Collection out = new ArrayList();
+        for (Property p : getProperties().values()){
+            if ( p.isReadable()){
+                Object val = get(p.getName());
+                if ( val != null ){
+                    out.add(val);
+                }
+            }
+        }
+        return out;
+    }
+    public Collection writableValues(){
+        Collection out = new ArrayList();
+        for (Property p : getProperties().values()){
+            // This only makes sense for values that are both readable and writable
+            if ( p.isReadable() && p.isWritable()){
+                Object val = get(p.getName());
+                if ( val != null ){
+                    out.add(val);
+                }
+            }
+        }
+        return out;
+    }
 
+    public Map<String,Property> getProperties(){
+        return klass.getProperties();
+    }
+    
+    public Map<String,Property> getReadableProperties(){
+        Map<String,Property> out = new HashMap<String,Property>();
+        Map<String,Property> props = getProperties();
+        for ( String key : props.keySet()){
+            Property p = props.get(key);
+            if ( p.isReadable()){
+                out.put(key, p);
+            }
+        }
+        return out;
+    }
+    
+    public Map<String,Property> getWritableProperties(){
+        Map<String,Property> out = new HashMap<String,Property>();
+        Map<String,Property> props = getProperties();
+        for ( String key : props.keySet()){
+            Property p = props.get(key);
+            if ( p.isWritable()){
+                out.put(key, p);
+            }
+        }
+        return out;
+    }
     
     private class Entry implements Map.Entry{
         
