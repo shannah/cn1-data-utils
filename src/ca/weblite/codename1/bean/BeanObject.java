@@ -324,7 +324,7 @@ public class BeanObject implements Map<String,Object> {
      * Returns all entries in the wrapped object, and in the overflow map.
      * @return 
      */
-    public Set entrySet() {
+    public Set<Map.Entry<String,Object>> entrySet() {
         Set out = new HashSet();
         for (String key : keySet() ){
             out.add(new Entry(key));
@@ -338,7 +338,7 @@ public class BeanObject implements Map<String,Object> {
      * not include any entries from the overflow map.
      * @return 
      */
-    public Set readableEntries(){
+    public Set<Map.Entry<String,Object>> readableEntries(){
         Set out = new HashSet();
         for (Property p : getProperties().values()){
             if ( p.isReadable()){
@@ -353,7 +353,7 @@ public class BeanObject implements Map<String,Object> {
      * not include any entries from the overflow map.
      * @return 
      */
-    public Set writableEntries(){
+    public Set<Map.Entry<String,Object>> writableEntries(){
         Set out = new HashSet();
         for (Property p : getProperties().values()){
             if ( p.isWritable()){
@@ -474,7 +474,7 @@ public class BeanObject implements Map<String,Object> {
     /**
      * Encapsulates an entry as returned from various entry methods.
      */
-    private class Entry implements Map.Entry{
+    private class Entry implements Map.Entry<String,Object>{
         
         String key;
         
@@ -482,7 +482,7 @@ public class BeanObject implements Map<String,Object> {
             this.key = key;
         }
         
-        public Object getKey() {
+        public String getKey() {
             return key;
         }
 
