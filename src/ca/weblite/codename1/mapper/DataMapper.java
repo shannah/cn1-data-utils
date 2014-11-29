@@ -392,7 +392,7 @@ public abstract class DataMapper {
             return getObject(map, key, cls);
        
         } else {
-            throw new RuntimeException("Failed to get key "+key+" because it was not a registered object type");
+            throw new RuntimeException("Failed to get key "+key+" for class "+cls+" because it was not a registered object type");
         }
     }
     
@@ -492,7 +492,7 @@ public abstract class DataMapper {
     }
     
     public String getString(Map map, String key){
-        return (String)get(map,key);
+        return (String)""+get(map,key);
     }
     
     public Date getDate(Map map, String key){
@@ -612,6 +612,27 @@ public abstract class DataMapper {
             return null;
         }
     }
+    
+    public Map readJSONFromURL(String url) throws IOException {
+        ConnectionRequest req = new ConnectionRequest();
+        req.setUrl(url);
+        req.setPost(false);
+        req.setHttpMethod("GET");
+        return readJSONFromConnection(req);
+    }
+    
+    public Map readJSONFromConnection(ConnectionRequest req) throws IOException {
+        NetworkManager.getInstance().addToQueueAndWait(req);
+        return readJSON(new ByteArrayInputStream(req.getResponseData()), "UTF-8");
+    }
+    
+    public Map readJSON(InputStream is, String charset) throws IOException {
+        JSONParser parser = new JSONParser();
+        Map m = parser.parseJSON(new InputStreamReader(is, charset));
+        return m;
+    }
+    
+    
     
     public <T> T readJSONFromURL(String url, Class<T> klass) throws IOException {
         ConnectionRequest req = new ConnectionRequest();
