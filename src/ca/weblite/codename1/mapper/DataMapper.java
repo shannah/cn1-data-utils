@@ -29,6 +29,107 @@ import java.util.Map;
  * @author shannah
  */
 public abstract class DataMapper {
+
+    /**
+     * @return the writeKeyConversion
+     */
+    public KeyConversion getWriteKeyConversion() {
+        return writeKeyConversion;
+    }
+
+    /**
+     * @param writeKeyConversion the writeKeyConversion to set
+     */
+    public void setWriteKeyConversion(KeyConversion writeKeyConversion) {
+        this.writeKeyConversion = writeKeyConversion;
+    }
+
+    /**
+     * @return the readKeyConversions
+     */
+    public List<KeyConversion> getReadKeyConversions() {
+        return readKeyConversions;
+    }
+
+    /**
+     * @param readKeyConversions the readKeyConversions to set
+     */
+    public void setReadKeyConversions(List<KeyConversion> readKeyConversions) {
+        this.readKeyConversions = readKeyConversions;
+    }
+    
+    public  static interface KeyConversion {
+        public String convertKey(String key);
+        
+    }
+    
+    private static class CamelToSnakeConversion implements KeyConversion {
+
+        public String convertKey(String key) {
+            int len = key.length();
+            char[] out = new char[len*2];
+            char[] in = key.toCharArray();
+            int i = 0;
+            int j = 0;
+            while ( i < len ){
+                char c = in[i];
+                if ( c>='A' && c<='Z'){ // caps
+                    out[j++] = '_';
+                    out[j++] = (char)(c+32);
+                } else {
+                    out[j++] = c;
+                }
+                i++;
+            }
+            return new String(out, 0, j);    
+        }
+        
+    }
+    
+    private static class SnakeToCamelConversion implements KeyConversion {
+
+        public String convertKey(String key) {
+            int len = key.length();
+            char[] out = new char[len];
+            char[] in = key.toCharArray();
+            int i = 0;
+            int j = 0;
+            boolean underscore=false;
+            while ( i < len ){
+                char c = in[i];
+                if ( c == '_'){ // caps
+                    underscore = true;
+                } else {
+                    if ( underscore ){
+                        underscore = false;
+                        if ( c >= 'a' && c <= 'z' ){
+                            out[j++] = (char)(c-32);
+                        } else {
+                            out[j++] = c;
+                        }
+                    } else {
+                        out[j++] = c;
+                    }
+                }
+                i++;
+            }
+            return new String(out, 0, j);    
+        }
+        
+    }
+    
+    private static class NoConversion implements KeyConversion {
+
+        public String convertKey(String key) {
+            return key;
+        }
+        
+    }
+    
+    public static KeyConversion CONVERSION_CAMEL_TO_SNAKE = new CamelToSnakeConversion();
+    public static KeyConversion CONVERSION_SNAKE_TO_CAMEL = new SnakeToCamelConversion();
+    public static KeyConversion CONVERSION_NONE = new NoConversion();
+    
     private Map<Class,DataMapper> context;
     private Map<String,FieldMapper> fieldMappers;
     private ObjectFactory factory;
@@ -36,6 +137,8 @@ public abstract class DataMapper {
     private DateFormat outputDateFormat;
     private Class selfClass = null;
     private boolean outputJSONReady = true;
+    private KeyConversion writeKeyConversion;
+    private List<KeyConversion> readKeyConversions;
     
     // True if, when writing JSON, fields that can't be converted are omitted
     // with no error.  Set to false if you want an exception to be thrown
@@ -81,7 +184,23 @@ public abstract class DataMapper {
     public void clearDateFormats(){
         dateFormats.clear();
     }
+    
+    private String _readKey(Map map, String key){
+        if ( readKeyConversions != null ){
+            for ( KeyConversion conv : readKeyConversions ){
+                String k = conv.convertKey(key);
+                System.out.println("Converting "+key+" to "+k);
+                if ( fieldMappers.containsKey(k) || map.containsKey(k)){
+                    key = k;
+                    break;
+                }
+            }
+        }
+        return key;
+    }
+    
     public boolean exists(Map map, String key){
+        key = _readKey(map, key);
         if ( fieldMappers.containsKey(key)){
             return fieldMappers.get(key).valueExists(map, key);
         } else {
@@ -90,6 +209,7 @@ public abstract class DataMapper {
     }
     
     public Object get(Map map, String key){
+        key = _readKey(map, key);
         if ( fieldMappers.containsKey(key)){
             return fieldMappers.get(key).getValue(map, key);
         } else {
@@ -327,6 +447,9 @@ public abstract class DataMapper {
         }
     }
     public void set(Map map, String key, Object value){
+        if ( getWriteKeyConversion() != null ){
+            key = getWriteKeyConversion().convertKey(key);
+        }
         if ( isOutputJSONReady() ){
            value = jsonify(value);
         }
