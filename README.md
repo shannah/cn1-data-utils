@@ -23,6 +23,8 @@ Codename One 1.0 or Higher
 
 See  [Codename One Reflection Utilities Project](https://github.com/shannah/cn1-mirah-json-macros)
 
+Also check out [Javadocs](https://rawgit.com/shannah/cn1-data-utils/master/dist/javadoc/index.html)
+
 ##Credits
 
 * Developed and maintained by [Steve Hannah](http://sjhannah.com)
