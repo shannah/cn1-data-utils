@@ -83,7 +83,7 @@ public class BeanObject implements Map<String,Object> {
      * @return 
      */
     public int size() {
-        return klass.properties.size() + (overflow != null ? overflow.size():0);
+        return keySet().size();
     }
 
     /**
@@ -104,7 +104,7 @@ public class BeanObject implements Map<String,Object> {
      * @return 
      */
     public boolean containsKey(Object key) {
-        return overflow != null && overflow.containsKey(key) || klass.properties.containsKey(key);
+        return overflow != null && overflow.containsKey(key) || klass.properties.containsKey(key) && klass.properties.get(key).isReadable();
     }
 
     /**
@@ -119,7 +119,7 @@ public class BeanObject implements Map<String,Object> {
             return false;
         }
         for ( BeanClass.Property e : klass.properties.values() ){
-            if ( value.equals(e.get(bean))){
+            if ( e.isReadable() && value.equals(e.get(bean))){
                 return true;
             }
         }
@@ -132,7 +132,7 @@ public class BeanObject implements Map<String,Object> {
      * @return The value of the specified property.
      */
     public Object get(Object key) {
-        if ( klass.properties.containsKey((String)key)) {
+        if ( klass.properties.containsKey((String)key) && klass.properties.get((String)key).isReadable()) {
             return klass.properties.get(key).get(bean);
         } else if ( overflow != null ){
             return overflow.get(key);
@@ -153,9 +153,13 @@ public class BeanObject implements Map<String,Object> {
      */
     public Object put(String key, Object value) {
         if ( klass.properties.containsKey(key)){
-            if ( klass.properties.get(key).isWritable()){
-                Object old = klass.properties.get(key).get(bean);
-                klass.properties.get(key).set(bean, value);
+            Property prop = klass.properties.get(key);
+            if ( prop.isWritable()){
+                Object old = null;
+                if ( prop.isReadable() ){
+                    prop.get(bean);
+                }
+                prop.set(bean, value);
                 return old;
             } else {
                 throw new RuntimeException("Attempt to write property "+key+" in bean but the property is not writable.");
@@ -297,7 +301,7 @@ public class BeanObject implements Map<String,Object> {
      */
     public Set<String> keySet() {
         Set<String> out = new HashSet<String>();
-        out.addAll(klass.properties.keySet());
+        out.addAll(readableKeys());
         if ( overflow != null ){
             out.addAll(overflow.keySet());
         }
