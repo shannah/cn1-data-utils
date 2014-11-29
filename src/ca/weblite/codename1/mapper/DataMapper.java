@@ -156,11 +156,11 @@ public abstract class DataMapper {
         this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz"));
         this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ"));
         this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
-        this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd"));
         this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
         this.dateFormats.add(new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z"));
         this.dateFormats.add(new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z"));
         this.dateFormats.add(new SimpleDateFormat("MM/dd/yyyy"));
+        this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd"));
         this.outputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
         this.init();
     }
