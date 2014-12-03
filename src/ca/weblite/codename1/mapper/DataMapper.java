@@ -11,6 +11,7 @@ import com.codename1.io.NetworkManager;
 import com.codename1.l10n.DateFormat;
 import com.codename1.l10n.ParseException;
 import com.codename1.l10n.SimpleDateFormat;
+import com.codename1.processing.Result;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,10 @@ import java.util.Map;
  */
 public abstract class DataMapper {
 
+    public static interface Decorator {
+        public void decorate(DataMapper dataMapper);
+    }
+    
     /**
      * @return the writeKeyConversion
      */
@@ -167,6 +172,22 @@ public abstract class DataMapper {
     
     protected void init(){
         
+    }
+    
+    public static void createContext(List<DataMapper> mappers, Decorator decorator){
+        Map<Class,DataMapper> context = new HashMap<Class,DataMapper>();
+        for ( DataMapper mapper : mappers ){
+            context.put(mapper.selfClass, mapper);
+            mapper.setContext(context);
+            if ( decorator != null ){
+                decorator.decorate(mapper);
+            }
+            
+        }
+    }
+    
+    public static void createContext(List<DataMapper> mappers){
+        createContext(mappers, null);
     }
     
     public void addDateFormat(DateFormat fmt){
@@ -642,9 +663,23 @@ public abstract class DataMapper {
         return readJSONFromConnection(req, klass);
     }
     
+    public <T> T readJSONFromURL(String url, Class<T> klass, String path) throws IOException {
+        ConnectionRequest req = new ConnectionRequest();
+        req.setUrl(url);
+        req.setPost(false);
+        req.setHttpMethod("GET");
+        return readJSONFromConnection(req, klass, path);
+    }
+    
     public <T> T readJSONFromConnection(ConnectionRequest req, Class<T> klass) throws IOException {
         NetworkManager.getInstance().addToQueueAndWait(req);
         return readJSON(new ByteArrayInputStream(req.getResponseData()), klass);
+        
+    }
+    
+    public <T> T readJSONFromConnection(ConnectionRequest req, Class<T> klass, String path) throws IOException {
+        NetworkManager.getInstance().addToQueueAndWait(req);
+        return readJSON(new ByteArrayInputStream(req.getResponseData()), klass, path);
         
     }
     
@@ -654,8 +689,20 @@ public abstract class DataMapper {
         return readMap(m, klass);
     }
     
+    public <T> T readJSON(InputStream is, String charset, Class<T> klass, String path) throws IOException {
+        JSONParser parser = new JSONParser();
+        Map m = parser.parseJSON(new InputStreamReader(is, charset));
+        Result r = Result.fromContent(m);
+        m = (Map)r.get(path);
+        return readMap(m, klass);
+    }
+    
     public <T> T readJSON(InputStream is,  Class<T> klass) throws IOException {
         return readJSON(is, "UTF-8", klass);
+    }
+    
+    public <T> T readJSON(InputStream is,  Class<T> klass, String path) throws IOException {
+        return readJSON(is, "UTF-8", klass, path);
     }
     
     public <T> T readJSON(String data, Class<T> klass) throws IOException {
