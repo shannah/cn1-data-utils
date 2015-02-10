@@ -73,6 +73,7 @@
     </target>
 
     <target name="buildNativeRIM">
+        <mkdir dir="native/rim"/>
         <path id="rimNativeDir">
             <fileset dir="native/rim"/>
         </path> 
@@ -91,6 +92,7 @@
     </target>
 
     <target name="buildNativeAND">
+        <mkdir dir="native/android"/>
         <path id="andNativeDir">
             <fileset dir="native/android"/>
         </path> 
@@ -103,6 +105,7 @@
     </target>
     
     <target name="buildNativeSE">
+        <mkdir dir="native/javase"/>
         <mkdir dir="native/javase" />
         <path id="seNativeDir">
             <fileset dir="native/javase"/>
@@ -128,6 +131,7 @@
     </target>
 
     <target name="buildNativeWIN">
+        <mkdir dir="native/win"/>
         <path id="winNativeDir">
             <fileset dir="native/win"/>
         </path> 
@@ -146,6 +150,7 @@
     </target>
 
     <target name="buildNativeIOS">
+        <mkdir dir="native/ios"/>
         <path id="iosNativeDir">
             <fileset dir="native/ios"/>
         </path> 
@@ -164,6 +169,8 @@
     </target>
 
     <target name="buildNativeME">
+        
+        <mkdir dir="native/j2me"/>
         <path id="meNativeDir">
             <fileset dir="native/j2me"/>
         </path> 

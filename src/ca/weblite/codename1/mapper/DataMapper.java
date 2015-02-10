@@ -31,6 +31,20 @@ import java.util.Map;
  */
 public abstract class DataMapper {
 
+    /**
+     * @return the outputDateFormat
+     */
+    public DateFormat getOutputDateFormat() {
+        return outputDateFormat;
+    }
+
+    /**
+     * @param outputDateFormat the outputDateFormat to set
+     */
+    public void setOutputDateFormat(DateFormat outputDateFormat) {
+        this.outputDateFormat = outputDateFormat;
+    }
+
     public static interface Decorator {
         public void decorate(DataMapper dataMapper);
     }
@@ -460,7 +474,7 @@ public abstract class DataMapper {
             mapper.setSilentWriteMap(oldSilentWrite);
             return m;
         } else if ( Date.class.isAssignableFrom(cls)){
-            return outputDateFormat.format((Date)item);
+            return getOutputDateFormat().format((Date)item);
         } else if ( !isSilentWriteMap() ){
             throw new RuntimeException("Failed to jsonify value "+item+" because its class is not an appropriate type to be serialized.");
         } else {
