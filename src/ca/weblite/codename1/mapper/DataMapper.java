@@ -168,6 +168,11 @@ public abstract class DataMapper {
     private boolean outputJSONReady = true;
     private KeyConversion writeKeyConversion;
     private List<KeyConversion> readKeyConversions;
+    private Map<String,Class> listValueTypes;
+    
+    // Disabled because at this juncture it doesn't seem necessary to have
+    // any map key types since JS only allows string types for key values.
+    //private Map<String,Class> mapKeyTypes;
     
     // True if, when writing JSON, fields that can't be converted are omitted
     // with no error.  Set to false if you want an exception to be thrown
@@ -199,6 +204,56 @@ public abstract class DataMapper {
         
     }
     
+    private Map<String,Class> listValueTypes(){
+        if (listValueTypes==null){
+            listValueTypes = new HashMap<String,Class>();
+        }
+        return listValueTypes;
+    }
+    
+    public void setListValueType(String key, Class type){
+        listValueTypes().put(key, type);
+    }
+    
+    public Map<String,Class> getListValueTypes(){
+        return Collections.unmodifiableMap(listValueTypes());
+    }
+    
+    public Class getListValueType(String key){
+        return listValueTypes().get(key);
+    }
+    
+    public void unsetListValueType(String key){
+        listValueTypes().remove(key);
+    }
+    
+    /*
+    
+    // Disable this functionality for now as there doesn't seem to be 
+    // a need to have custom map types since JSON only allows string keys.
+    private Map<String,Class> mapKeyTypes(){
+        if (mapKeyTypes==null){
+            mapKeyTypes = new HashMap<String,Class>();
+        }
+        return mapKeyTypes;
+    }
+    
+    public void setMapKeyType(String key, Class type){
+        mapKeyTypes().put(key, type);
+    }
+    
+    public Map<String,Class> getMapKeyTypes(){
+        return Collections.unmodifiableMap(mapKeyTypes());
+    }
+    
+    public Class getMapKeyType(String key){
+        return mapKeyTypes().get(key);
+    }
+    
+    public void unsetMapKeyType(String key){
+        mapKeyTypes().remove(key);
+    }
+    */
     public static void createContext(List<DataMapper> mappers, Decorator decorator){
         Map<Class,DataMapper> context = new HashMap<Class,DataMapper>();
         for ( DataMapper mapper : mappers ){
@@ -340,6 +395,14 @@ public abstract class DataMapper {
                             (T)NumberUtil.dateValue(entry.getValue(), dateFormats)
                     );
                 }
+            } else if ( String.class.equals(cls)){
+                for ( Object tmp : src.entrySet()){
+                    Map.Entry entry = (Map.Entry)tmp;
+                    out.put(
+                            entry.getKey().toString(), 
+                            (T)(""+entry.getValue())
+                    );
+                }
             } else if ( context.containsKey(cls)){
                 DataMapper mapper = context.get(cls);
                 for ( Object tmp : src.entrySet()){
@@ -436,7 +499,10 @@ public abstract class DataMapper {
             return getDate(map, key);
         } else if ( context.containsKey(cls) ){
             return getObject(map, key, cls);
-       
+        } else if ( List.class.isAssignableFrom(cls) && listValueTypes != null && listValueTypes.containsKey(key)){
+            return getList(map, key, listValueTypes.get(key));
+        } else if ( Map.class.isAssignableFrom(cls) && listValueTypes != null && listValueTypes.containsKey(key)){
+            return getMap(map, key, listValueTypes.get(key));
         } else {
             throw new RuntimeException("Failed to get key "+key+" for class "+cls+" because it was not a registered object type");
         }
