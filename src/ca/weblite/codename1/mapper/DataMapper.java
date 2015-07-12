@@ -419,6 +419,9 @@ public abstract class DataMapper {
     }
     
     public <T> List<T> getList(Map map, String key, Class<T> cls){
+        if (get(map,key)==null) {
+            return null;
+        }
         ArrayList<T> out = new ArrayList<T>();
         if ( Integer.class.equals(cls)){
             List l = (List)get(map, key);
