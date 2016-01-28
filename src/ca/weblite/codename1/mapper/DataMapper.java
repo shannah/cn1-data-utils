@@ -40,6 +40,39 @@ import java.util.Map;
  * @author shannah
  */
 public abstract class DataMapper {
+    
+    private static Map<String,DataMapper> globalContext;
+    
+    public static DataMapper getGlobal(String name) {
+        if (globalContext != null) {
+            return globalContext.get(name);
+        }
+        return null;
+    }
+    
+    public static void addGlobal(String name, DataMapper mapper) {
+        if (globalContext == null) {
+            globalContext = new HashMap<String,DataMapper>();
+        }
+        
+        if (!globalContext.containsKey(name)) {
+            if (mapper.getContext() == null) {
+                mapper.setContext(new HashMap<Class,DataMapper>());
+                mapper.getContext().put(mapper.selfClass, mapper);
+            }
+            globalContext.put(name, mapper);
+        } else {
+            Map<Class,DataMapper> ctx = globalContext.get(name).getContext();
+            ctx.put(mapper.selfClass, mapper);
+            mapper.setContext(ctx);
+        }
+    }
+    
+    public static void clearGlobal(String name) {
+        if (globalContext != null) {
+            globalContext.remove(name);
+        }
+    }
 
     /**
      * @return the outputDateFormat
@@ -553,6 +586,8 @@ public abstract class DataMapper {
             mapper.setOutputJSONReady(oldJSONReady);
             mapper.setSilentWriteMap(oldSilentWrite);
             return m;
+        } else if (Enum.class.isAssignableFrom(cls)) {
+            return ((Enum)item).name();
         } else if ( Date.class.isAssignableFrom(cls)){
             return getOutputDateFormat().format((Date)item);
         } else if ( !isSilentWriteMap() ){
@@ -620,6 +655,12 @@ public abstract class DataMapper {
             return readMap((Map)o, klass);
         } else if ( o != null && klass.isAssignableFrom(o.getClass())){
             return (T)o;
+        } else if (Enum.class.isAssignableFrom(klass)) {
+            if (o instanceof String) {
+                return (T)Enum.valueOf((Class<? extends Enum>)klass, key);
+            } else {
+                throw new RuntimeException("Illegal value type when reading Enum value for key "+key+" of type "+klass);
+            }
         } else {
             throw new RuntimeException("Illegal object type for key "+key+".  Expected "+klass+" but found "+o.getClass());
         }
@@ -884,6 +925,33 @@ public abstract class DataMapper {
      */
     public void setSilentWriteMap(boolean silentWriteMap) {
         this.silentWriteMap = silentWriteMap;
+    }
+    
+    /**
+     * Reads a list of Maps and produces a list of the converted type
+     * @param input A list of maps that need to be converted to objects.
+     * @return A list of objects corresponding to the input maps.
+     */
+    public <T> List<T> parseListOfMaps(List<Map> input, Class<T> outType) {
+        List<T> out = new ArrayList<T>(input.size());
+        for (Map item : input) {
+            out.add(readMap(item, outType));
+        }
+        return out;
+    }
+    
+    /**
+     * Reads a map of maps to produce a map of the converted type.
+     * @param input The map of maps that need to be converted to objects.
+     * @param outType The map of objects corresponding to the input maps.
+     * @return 
+     */
+    public Map parseMapOfMaps(Map input, Class outType) {
+        Map out = new HashMap();
+        for (Object key : input.keySet()) {
+            out.put(key, readMap((Map)input.get(key), outType));
+        }
+        return out;
     }
     
 }
