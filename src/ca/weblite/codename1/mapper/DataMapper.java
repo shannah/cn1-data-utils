@@ -42,6 +42,7 @@ import java.util.Map;
 public abstract class DataMapper {
     
     private static Map<String,DataMapper> globalContext;
+    private static Map<String,DataMapper> globalIndex = new HashMap<String,DataMapper>();
     
     public static DataMapper getGlobal(String name) {
         if (globalContext != null) {
@@ -203,6 +204,13 @@ public abstract class DataMapper {
     private List<KeyConversion> readKeyConversions;
     private Map<String,Class> listValueTypes;
     
+    /**
+     * Stores the class name that this mapper reads and writes.
+     * We will use this to store "runtime" information when serializing
+     * so we can use this information upon "unserializing"
+     */
+    private String className;
+    
     // Disabled because at this juncture it doesn't seem necessary to have
     // any map key types since JS only allows string types for key values.
     //private Map<String,Class> mapKeyTypes;
@@ -235,6 +243,20 @@ public abstract class DataMapper {
     
     protected void init(){
         
+    }
+    
+    public void setClassName(String name) {
+        if (this.className != null) {
+            globalIndex.remove(this.className);
+        }
+        this.className = name;
+        if (this.className != null) {
+            globalIndex.put(this.className, this);
+        }
+    }
+    
+    public String getClassName() {
+        return className;
     }
     
     private Map<String,Class> listValueTypes(){
@@ -533,7 +555,7 @@ public abstract class DataMapper {
             return getString(map, key);
         } else if ( Date.class.equals(cls)){
             return getDate(map, key);
-        } else if ( context.containsKey(cls) ){
+        } else if ( context.containsKey(cls) || Enum.class.isAssignableFrom(cls) ){
             return getObject(map, key, cls);
         } else if ( List.class.isAssignableFrom(cls) && listValueTypes != null && listValueTypes.containsKey(key)){
             return getList(map, key, listValueTypes.get(key));
@@ -583,6 +605,9 @@ public abstract class DataMapper {
             mapper.setOutputJSONReady(true);
             mapper.setSilentWriteMap(this.isSilentWriteMap());
             mapper.writeMap(m, item);
+            if (className != null) {
+                m.put("class", className);
+            }
             mapper.setOutputJSONReady(oldJSONReady);
             mapper.setSilentWriteMap(oldSilentWrite);
             return m;
@@ -657,7 +682,7 @@ public abstract class DataMapper {
             return (T)o;
         } else if (Enum.class.isAssignableFrom(klass)) {
             if (o instanceof String) {
-                return (T)Enum.valueOf((Class<? extends Enum>)klass, key);
+                return (T)Enum.valueOf((Class<? extends Enum>)klass, (String)o);
             } else {
                 throw new RuntimeException("Illegal value type when reading Enum value for key "+key+" of type "+klass);
             }
@@ -756,7 +781,20 @@ public abstract class DataMapper {
     }
     
     public <T> T readMap(Map map, Class<T> klass){
-        DataMapper mapper = context.get(klass);
+        DataMapper mapper = null;
+        if (map.containsKey("class")) {
+            Object cls = map.get("class");
+            if (String.class == cls.getClass()) {
+                String scls = (String)cls;
+                if (globalIndex.containsKey(scls)) {
+                    mapper = globalIndex.get(scls);
+                }
+            }
+            
+        }
+        if (mapper == null) {
+            mapper = context.get(klass);
+        }
         if ( mapper == this){
             T obj = createObject(klass);
             //System.out.println("Readng map "+map);
