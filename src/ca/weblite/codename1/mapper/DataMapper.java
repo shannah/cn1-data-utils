@@ -360,7 +360,7 @@ public abstract class DataMapper {
         if ( fieldMappers.containsKey(key)){
             return fieldMappers.get(key).valueExists(map, key);
         } else {
-            return map.get(key) != null;
+            return map.containsKey(key);
         }
     }
     
@@ -535,6 +535,10 @@ public abstract class DataMapper {
     }
     
     public Object get(Map map, String key, Class cls){
+        Object v = get(map, key);
+        if (v == null) {
+            return null;
+        }
         if (  Integer.class.equals(cls)){
             return getInt(map, key);
         } else if (  Double.class.equals(cls)){
