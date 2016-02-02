@@ -360,7 +360,7 @@ public abstract class DataMapper {
         if ( fieldMappers.containsKey(key)){
             return fieldMappers.get(key).valueExists(map, key);
         } else {
-            return map.containsKey(key);
+            return map.get(key) != null;
         }
     }
     
@@ -605,8 +605,8 @@ public abstract class DataMapper {
             mapper.setOutputJSONReady(true);
             mapper.setSilentWriteMap(this.isSilentWriteMap());
             mapper.writeMap(m, item);
-            if (className != null) {
-                m.put("class", className);
+            if (mapper.className != null) {
+                m.put("class", mapper.className);
             }
             mapper.setOutputJSONReady(oldJSONReady);
             mapper.setSilentWriteMap(oldSilentWrite);
@@ -784,19 +784,21 @@ public abstract class DataMapper {
         DataMapper mapper = null;
         if (map.containsKey("class")) {
             Object cls = map.get("class");
-            if (String.class == cls.getClass()) {
-                String scls = (String)cls;
-                if (globalIndex.containsKey(scls)) {
-                    mapper = globalIndex.get(scls);
-                }
+            //if (String.class == cls.getClass()) {
+            String scls = (String)cls;
+            if (globalIndex.containsKey(scls)) {
+                mapper = globalIndex.get(scls);
             }
+            //}
             
         }
         if (mapper == null) {
             mapper = context.get(klass);
         }
         if ( mapper == this){
-            T obj = createObject(klass);
+            //FIXME klass may be a superclass..
+            //We need to 
+            T obj = createObject((Class<T>)selfClass);
             //System.out.println("Readng map "+map);
             readMap(map, obj);
             return obj;
