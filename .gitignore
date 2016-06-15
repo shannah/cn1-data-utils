@@ -1,0 +1,7 @@
+/AntTasks/build/
+/AntTasks/dist/
+/AntTasks/nbproject/private/
+build
+dist
+private
+.DS_Store
