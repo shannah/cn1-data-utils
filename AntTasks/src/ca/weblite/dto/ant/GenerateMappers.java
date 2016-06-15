@@ -70,6 +70,7 @@ public class GenerateMappers extends Task {
         File f = file;
         if (!f.exists()) {
             try {
+                f.getParentFile().mkdirs();
                 if (!f.createNewFile()) {
                     throw new BuildException("Failed to create file "+f);
                 }
