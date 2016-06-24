@@ -89,6 +89,20 @@ public abstract class DataMapper {
         this.outputDateFormat = outputDateFormat;
     }
 
+    /**
+     * @return the outputDatesAsLongs
+     */
+    public boolean isOutputDatesAsLongs() {
+        return outputDatesAsLongs;
+    }
+
+    /**
+     * @param outputDatesAsLongs the outputDatesAsLongs to set
+     */
+    public void setOutputDatesAsLongs(boolean outputDatesAsLongs) {
+        this.outputDatesAsLongs = outputDatesAsLongs;
+    }
+
     public static interface Decorator {
         public void decorate(DataMapper dataMapper);
     }
@@ -203,6 +217,7 @@ public abstract class DataMapper {
     private KeyConversion writeKeyConversion;
     private List<KeyConversion> readKeyConversions;
     private Map<String,Class> listValueTypes;
+    private boolean outputDatesAsLongs = false;
     
     /**
      * Stores the class name that this mapper reads and writes.
@@ -237,6 +252,7 @@ public abstract class DataMapper {
         this.dateFormats.add(new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z"));
         this.dateFormats.add(new SimpleDateFormat("MM/dd/yyyy"));
         this.dateFormats.add(new SimpleDateFormat("yyyy-MM-dd"));
+        
         this.outputDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         this.init();
     }
@@ -618,6 +634,9 @@ public abstract class DataMapper {
         } else if (Enum.class.isAssignableFrom(cls)) {
             return ((Enum)item).name();
         } else if ( Date.class.isAssignableFrom(cls)){
+            if (outputDatesAsLongs) {
+                return new Long(((Date)item).getTime());
+            }
             return getOutputDateFormat().format((Date)item);
         } else if ( !isSilentWriteMap() ){
             throw new RuntimeException("Failed to jsonify value "+item+" because its class is not an appropriate type to be serialized.");
