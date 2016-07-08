@@ -67,6 +67,9 @@ public class NumberUtil {
     }
     
     public static Date dateValue(Object o, List<DateFormat> formats){
+        if (o == null) {
+            return null;
+        }
         if ( o instanceof Date ){
             return (Date)o;
         } else if ( NumberUtil.isNumber(o)){
