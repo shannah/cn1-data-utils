@@ -394,7 +394,59 @@ public abstract class DataMapper {
         Object o = get(map, key);
         if ( o instanceof Map ){
             Map src = (Map)o;
-            if ( Integer.class.equals(cls)){
+            if (src == null) {
+                return null;
+            }
+            if (cls == null) {
+                HashMap tmpMap = new HashMap();
+
+                Map newMap = new HashMap();
+                
+                for (Object ko : src.keySet()) {
+                    Object oldKo = ko;
+                    Object kv = src.get(ko);
+                    /*
+                    if (Map.class.isAssignableFrom(ko.getClass())) {
+                        Map mo = new HashMap();
+                        mo.putAll((Map)ko);
+                        if (mo.containsKey("class")) {
+                            ko = this.readMap(mo, (Class<T>)null);
+                        } else {
+                            tmpMap.put("--test", (Map)ko);
+                            ko = this.getMap(tmpMap, "--test", null);
+                        }
+                    } else if (List.class.isAssignableFrom(ko.getClass())) {
+                        tmpMap.put("--test", (List)ko);
+                        ko = this.getList(tmpMap, "--test", null);
+
+                    } else {
+                        tmpMap.put("--test", ko);
+                        ko = this.get(tmpMap, "--test", null);
+                    }
+                    */
+                    if (Map.class.isAssignableFrom(kv.getClass())) {
+                        Map mo = new HashMap();
+                        mo.putAll((Map)kv);
+                        if (mo.containsKey("class")) {
+                            kv = this.readMap(mo, (Class<T>)null);
+                        } else {
+                            tmpMap.put("--test", (Map)kv);
+                            kv = this.getMap(tmpMap, "--test", null);
+                        }
+                    } else if (List.class.isAssignableFrom(kv.getClass())) {
+                        tmpMap.put("--test", (List)kv);
+                        kv = this.getList(tmpMap, "--test", null);
+
+                    } else {
+                        tmpMap.put("--test", kv);
+                        kv = this.get(tmpMap, "--test", null);
+                    }
+                    
+                    newMap.put(ko, kv);
+                    
+                }
+                return newMap;
+            } else if ( Integer.class.equals(cls)){
                 for ( Object tmp : src.entrySet()){
                     Map.Entry entry = (Map.Entry)tmp;
                     out.put(
@@ -489,12 +541,39 @@ public abstract class DataMapper {
         return out;
     }
     
+    
+    
     public <T> List<T> getList(Map map, String key, Class<T> cls){
         if (get(map,key)==null) {
             return null;
         }
         ArrayList<T> out = new ArrayList<T>();
-        if ( Integer.class.equals(cls)){
+        
+        if (cls == null) {
+            
+            List l = (List)get(map, key);
+            HashMap tmpMap = new HashMap();
+                    
+            for (Object o : l) {
+                if (Map.class.isAssignableFrom(o.getClass())) {
+                    Map mo = new HashMap();
+                    mo.putAll((Map)o);
+                    if (mo.containsKey("class")) {
+                        out.add(this.readMap(mo, (Class<T>)null));
+                    } else {
+                        tmpMap.put("--test", (Map)o);
+                        out.add((T)this.getMap(tmpMap, "--test", null));
+                    }
+                } else if (List.class.isAssignableFrom(o.getClass())) {
+                    tmpMap.put("--test", (List)o);
+                    out.add((T)this.getList(tmpMap, "--test", null));
+                    
+                } else {
+                    tmpMap.put("--test", o);
+                    out.add((T)this.get(tmpMap, "--test", null));
+                }
+            }
+        } else if ( Integer.class.equals(cls)){
             List l = (List)get(map, key);
             for ( Object o : l ){
                 out.add((T)NumberUtil.boxedIntValue(o));
@@ -555,7 +634,11 @@ public abstract class DataMapper {
         if (v == null) {
             return null;
         }
-        if (  Integer.class.equals(cls)){
+        if (cls == null) {
+            cls = v.getClass();
+
+        }
+        if (Integer.class.equals(cls)){
             return getInt(map, key);
         } else if (  Double.class.equals(cls)){
             return getDouble(map, key);
@@ -581,6 +664,10 @@ public abstract class DataMapper {
             return getList(map, key, listValueTypes.get(key));
         } else if ( Map.class.isAssignableFrom(cls) && listValueTypes != null && listValueTypes.containsKey(key)){
             return getMap(map, key, listValueTypes.get(key));
+        } else if (List.class.isAssignableFrom(cls)) {
+            return getList(map, key, null);
+        } else if (Map.class.isAssignableFrom(cls)) {
+            return getMap(map, key, null);
         } else {
             throw new RuntimeException("Failed to get key "+key+" for class "+cls+" because it was not a registered object type");
         }
@@ -822,7 +909,7 @@ public abstract class DataMapper {
             //FIXME klass may be a superclass..
             //We need to 
             T obj = createObject((Class<T>)selfClass);
-            //System.out.println("Readng map "+map);
+            System.out.println("Readng map "+map);
             readMap(map, obj);
             return obj;
         } else if ( mapper != null) {
