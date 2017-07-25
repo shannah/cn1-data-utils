@@ -40,7 +40,7 @@ import java.util.Map;
  * @author shannah
  */
 public abstract class DataMapper {
-    
+    public static boolean DEBUG=false;
     private static Map<String,DataMapper> globalContext;
     private static Map<String,DataMapper> globalIndex = new HashMap<String,DataMapper>();
     
@@ -1004,7 +1004,10 @@ public abstract class DataMapper {
     
     public abstract void readMap(Map src, Object dest);
     
-    
+    public static Object[] toArray(List l) {
+        return l == null ? null :
+                l.toArray(new Object[l.size()]);
+    }
     
     public void setFieldMapper(String field, FieldMapper mapper){
         fieldMappers.put(field, mapper);
